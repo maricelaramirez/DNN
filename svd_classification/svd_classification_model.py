@@ -43,9 +43,8 @@ buf = f4.read(num_test)
 test_labels = np.frombuffer(buf, dtype=np.uint8).astype(np.int64)
 test_labels = test_labels.reshape(num_test, 1)
 
-# TRAINING THE MODEL (for each set of examples per label, 0-9)
-num_pcs = 5; # can experiment with this hyperparameter
-model_dict = {}
+# TRAINING THE MODEL (computing SVD, for each set of examples per label, 0-9)
+tmp_dict = {}
 for i in range(10):
     # gather all data points corresponding to label i
     boolArr = (train_labels == i)
@@ -55,23 +54,33 @@ for i in range(10):
     
     # train SVD model for this label by selecting num_pcs principal components
     u, s, vh = np.linalg.svd(temp, full_matrices = False)
-    model_dict[i] = u[:, :num_pcs]
+    tmp_dict[i] = u
+
+# Uses top num_pcs principal component subspaces for each class, and
+# classifies new images based on which subspace the orthogonal projection of
+# the unrolled vector is closest to in Euclidean distance.
+# Returns model accuracy.
+def svd_model(num_pcs):
+    model_dict = {}
+
+    # use num_pcs dimensional subspaces
+    for i in range(10):
+        model_dict[i] = tmp_dict[i][:, :num_pcs]
+
+    # testing the model
+    vec = np.zeros(test_labels.shape)
+    for i in range(num_test):
+        tmp_ix = -1
+        min_proj = float("inf")
+        for j in range(10): # consider all possible labels, 0-9
+            pt = test_data[:,i].reshape((784,1))
+            curr_proj = np.linalg.norm(pt - model_dict[j] @ model_dict[j].T @ pt)
+            if curr_proj < min_proj:
+                min_proj = curr_proj
+                tmp_ix = j
+        if tmp_ix == test_labels[i,0]:
+            vec[i,0] = 1
     
-# TESTING THE MODEL
-vec = np.zeros(test_labels.shape)
-asdf = np.zeros(test_labels.shape)
-for i in range(num_test):
-    tmp_ix = -1
-    min_proj = float("inf")
-    for j in range(10):
-        pt = test_data[:,i].reshape((784,1))
-        curr_proj = np.linalg.norm(pt - model_dict[j] @ model_dict[j].T @ pt)
-        if curr_proj < min_proj:
-            min_proj = curr_proj
-            tmp_ix = j
-    asdf[i,0] = tmp_ix
-    if tmp_ix == test_labels[i,0]:
-        vec[i,0] = 1
-        
-# MODEL ACCURACY
-acc = vec.mean()
+    # model accuracy
+    return vec.mean()
+    
