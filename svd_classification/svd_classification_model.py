@@ -74,7 +74,7 @@ def svd_model(num_pcs):
         min_proj = float("inf")
         for j in range(10): # consider all possible labels, 0-9
             pt = test_data[:,i].reshape((784,1))
-            curr_proj = np.linalg.norm(pt - model_dict[j] @ model_dict[j].T @ pt)
+            curr_proj = np.linalg.norm(pt - model_dict[j] @ (model_dict[j].T @ pt))
             if curr_proj < min_proj:
                 min_proj = curr_proj
                 tmp_ix = j
