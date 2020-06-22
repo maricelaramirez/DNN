@@ -17,6 +17,7 @@ import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import matplotlib.pyplot as plt
 
 # LOAD DATA
 transform = transforms.Compose(
@@ -26,7 +27,7 @@ transform = transforms.Compose(
 trainset = torchvision.datasets.MNIST(root = './data', train = True, 
                                       download = True, transform = transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
-                                          shuffle=True)
+                                          shuffle=True, num_workers=2)
 
 testset = torchvision.datasets.MNIST(root = './data', train = False, 
                                      download = True, transform = transform)
@@ -59,6 +60,19 @@ net = Net()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
+# Computes error on the test set.
+def computeError():
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in testloader:
+            images, labels = data
+            outputs = net(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    return 100.0 * correct / total
+
 # TRAIN THE NETWORK
 for epoch in range(2):  # loop over the dataset multiple times
 
@@ -83,16 +97,4 @@ for epoch in range(2):  # loop over the dataset multiple times
                   (epoch + 1, i + 1, running_loss / 2000))
             running_loss = 0.0
 
-# TEST THE NETWORK
-correct = 0
-total = 0
-with torch.no_grad():
-    for data in testloader:
-        images, labels = data
-        outputs = net(images)
-        _, predicted = torch.max(outputs.data, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-
-print('Accuracy of the network on the 10000 test images: %d %%' % (
-    100 * correct / total))
+print('Accuracy of the network on the 10000 test images: %f' % computeError())
