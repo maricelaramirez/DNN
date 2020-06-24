@@ -18,6 +18,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+
 # LOAD DATA
 def load():
     # Apply transform
@@ -58,7 +59,8 @@ def construct_nn():
             x = self.fc3(x)
             return x
     
-    return Net()
+    net = Net()
+    return net
 
 # DEFINE OPTIMIZER
 def optimizer(net):
@@ -66,7 +68,7 @@ def optimizer(net):
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
     return [criterion, optimizer]
 
-# Computes error on the test set.
+# Computes error on test set
 def computeError(testloader, net):
     correct = 0
     total = 0
@@ -80,21 +82,21 @@ def computeError(testloader, net):
     return 100.0 * correct / total
 
 # TRAINS NEURAL NET
-def train_net(train, net, criterion, num_epochs):
+def train_net(trainloader, net, criterion, opt, num_epochs):
     for epoch in range(num_epochs):  # loop over the dataset multiple times
         running_loss = 0.0
-        for i, data in enumerate(train, 0):
+        for i, data in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
             
             # zero the parameter gradients
-            optimizer.zero_grad()
+            opt.zero_grad()
             
             # forward + backward + optimize
             outputs = net(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
-            optimizer.step()
+            opt.step()
 
             # print statistics
             running_loss += loss.item()
@@ -107,5 +109,10 @@ def train_net(train, net, criterion, num_epochs):
 # Trains a specified neural network for a canonical benchmark problem.
 def main():
     [train, trainloader, test, testloader] = load()
+    net = construct_nn()
+    [criterion, opt] = optimizer(net)
     
-    print('Accuracy of the network on the 10000 test images: %f' % computeError())
+    train_net(trainloader, net, criterion, opt, 3)
+    
+    print('Accuracy of the network on the 10000 test images: %f' % 
+          computeError(testloader, net))
