@@ -15,9 +15,7 @@ import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import matplotlib
 import matplotlib.pyplot as plt
-
 
 # LOAD DATA
 def load():
@@ -83,7 +81,8 @@ def computeError(testloader, net):
             correct += (predicted == labels).sum().item()
     return 100.0 * correct / total
 
-def single_iter(data):
+# adds to the running loss for a particular iteration of SGD
+def single_iter(data, criterion, opt):
     # get the inputs; data is a list of [inputs, labels]
     inputs, labels = data
 
@@ -106,18 +105,18 @@ def train_net(trainloader, testloader, net, criterion, opt, num_epochs):
 
     # give error at initialization
     iters.append(0)
-    losses.append(single_iter(list(enumerate(trainloader, 0))[0]))
+    losses.append(single_iter(list(enumerate(trainloader, 0))[0][1], criterion, opt))
     test_err.append(round(computeError(testloader, net), 2))
 
     for epoch in range(num_epochs):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # print statistics
-            running_loss += single_iter(data)
+            running_loss += single_iter(data, criterion, opt)
             if i % 2000 == 1999:  # print every 2000 mini-batches
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 2000))
-                losses.append(round(running_loss, 2))
+                losses.append(round(running_loss / 2000, 2))
                 iters.append(epoch * 14999 + i + 1)
                 test_err.append(round(computeError(testloader, net), 2))
                 running_loss = 0.0
@@ -125,19 +124,20 @@ def train_net(trainloader, testloader, net, criterion, opt, num_epochs):
     return [iters, losses, test_err]
 
 # Shows relevant plots.
-# Training error vs. iterations, and test error vs. iterations.
-def plots(iters, losses):
-    fig, axs = plt.subplots(1, 2)
-
-    axs[0, 0].set_title('training error over time')
-    axs[0, 0].xlabel('iterations')
-    axs[0, 0].ylabel('training error')
-
-    axs[0, 1].set_title('test error over time')
-    axs[0, 1].xlabel('iterations')
-    axs[0, 1].ylabel('test error')
-
+# Training error vs. iterations
+def train_plot(iters, losses):
+    plt.title('training error over time')
+    plt.xlabel('iterations')
+    plt.ylabel('training error')
     plt.plot(iters, losses)
+    plt.show()
+
+# Test error vs. iterations
+def test_plot(iters, test_err):
+    plt.title('test accuracy over time')
+    plt.xlabel('iterations')
+    plt.ylabel('test accuracy')
+    plt.plot(iters, test_err)
     plt.show()
 
 # FULL DL PIPELINE
@@ -147,9 +147,10 @@ if __name__ == "__main__":
     net = construct_nn()
     [criterion, opt] = optimizer(net)
 
-    [iters, losses] = train_net(trainloader, testloader, net, criterion, opt, 1)
+    [iters, losses, test_err] = train_net(trainloader, testloader, net, criterion, opt, 1) # change number of epochs
 
     print('Accuracy of the network on the 10000 test images: %f' %
           computeError(testloader, net))
 
-    plots(iters, losses)
+    train_plot(iters, losses)
+    test_plot(iters, test_err)
