@@ -7,8 +7,6 @@ Created on Mon Jun 22 08:42:15 2020
 """
 
 # Training a CNN on MNIST, using PyTorch.
-# Heavily drawn from PyTorch's tutorial code; uses the same framework, with
-# some adjusted hyperparameters.
 
 # IMPORTS
 import torch
@@ -17,7 +15,7 @@ import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
+import matplotlib.pyplot as plt
 
 # LOAD DATA
 def load():
@@ -83,6 +81,8 @@ def computeError(testloader, net):
 
 # TRAINS NEURAL NET
 def train_net(trainloader, net, criterion, opt, num_epochs):
+    iters = []
+    losses = []
     for epoch in range(num_epochs):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
@@ -103,7 +103,19 @@ def train_net(trainloader, net, criterion, opt, num_epochs):
             if i % 2000 == 1999:    # print every 2000 mini-batches
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 2000))
+                losses.append(round(running_loss, 2))
+                iters.append(epoch * 14999 + i + 1)
                 running_loss = 0.0
+            
+    return [iters, losses]
+
+# Shows relevant plots.
+def plots(iters, losses):
+    plt.plot(iters, losses)
+    plt.xlabel("Iterations")
+    plt.ylabel("Training Error")
+    plt.draw()
+
 
 # FULL DL PIPELINE
 # Trains a specified neural network for a canonical benchmark problem.
@@ -112,7 +124,11 @@ def main():
     net = construct_nn()
     [criterion, opt] = optimizer(net)
     
-    train_net(trainloader, net, criterion, opt, 3)
+    [iters, losses] = train_net(trainloader, net, criterion, opt, 1)
     
     print('Accuracy of the network on the 10000 test images: %f' % 
           computeError(testloader, net))
+    
+    print(iters, losses)
+    return [iters, losses]
+    #plots(iters, losses)
