@@ -9,6 +9,7 @@ Created on Thu Jun 18 19:55:17 2020
 # IMPORTS
 import gzip
 import numpy as np
+import matplotlib.pyplot as plt
 
 # LOAD DATA
 f = gzip.open('train-images-idx3-ubyte.gz','r')
@@ -83,4 +84,14 @@ def svd_model(num_pcs):
     
     # model accuracy
     return vec.mean()
-    
+
+# Plot test accuracy over number of principal components.
+def test_pcs(up_bd):
+    idx = []
+    acc = []
+    for i in range(1, up_bd):
+        idx.append[i]
+        acc.append(svd_model(i))
+
+    plt.plot(idx, acc)
+    plt.show()

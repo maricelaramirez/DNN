@@ -8,15 +8,27 @@ Created on Wed Jun 24 04:52:25 2020
 
 # Graphing functions for visualizing model performance.
 
-# IMPORTS
-import matplotlib.pyplot as plt
+# import functions from cnn_mnist
+from models.benchmarks.cnn_mnist import *
 
-# FUNCTIONS
-# Graphs training error over time, either by number of iterations or epochs.
-# Argument to function is true if over epochs - number of iterations otherwise.
-def train_err(epochs, lst1, lst2):
-    
-    
-# Graphs test error over time, either by number of iterations or epochs.
-# Argument to function is true if over epochs - number of iterations otherwise. 
-def test_err(epochs):
+# Graphs learning trajectories over different numbers of layers,
+# while maintaining the number of neurons as a constant.
+# lst contains set of number of layers to be observed.
+def layer_traj(lst, num_neurons):
+    [train, trainloader, test, testloader] = load()
+    for i in range(len(lst)):
+        net = construct_nn(num_neurons, lst[i])
+        [criterion, opt] = optimizer(net)
+
+        # change number of epochs as a hyperparameter
+        [iters, losses, test_err] = train_net(trainloader, testloader, net, criterion, opt, 1)
+
+        print('Accuracy of the network on the 10000 test images: %f' % computeError(testloader, net))
+        test_plot(iters, test_err)
+
+    plt.legend(lst)
+    plt.show()
+
+if __name__ == "__main__":
+    lst = [1, 2, 3]
+    layer_traj(lst, 500)

@@ -36,9 +36,32 @@ def load():
     return [train, trainloader, test, testloader]
 
 
-# CONSTRUCT NEURAL NET
+# CONSTRUCTING NEURAL NETS
 # Change hyperparameters to test different architectures.
-def construct_nn():
+# Constructing standard feedforward neural network - assumed hidden layers of equal width, for now
+# num_neurons neurons over i hidden layers (does not include the final output layer)
+def construct_nn(num_neurons, i):
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            width = int(num_neurons/i)
+            setattr(self, 'fc1', nn.Linear(784, width))
+            setattr(self, 'fc%s' % (i+1), nn.Linear(width, 10))
+            for idx in range(2, i+1):
+                setattr(self, 'fc%s' % idx, nn.Linear(width, width))
+            self.softmax = nn.Softmax()
+
+        def forward(self, x):
+            x = x.view(-1, 784)
+            for idx in range(1, i+2):
+                x = F.relu(getattr(self, 'fc%s' % idx)(x))
+            x = self.softmax(x)
+            return x
+
+    return Net()
+
+# Constructing CNN.
+def construct_cnn():
     class Net(nn.Module):
         def __init__(self):
             super(Net, self).__init__()
@@ -58,15 +81,13 @@ def construct_nn():
             x = self.fc3(x)
             return x
 
-    net = Net()
-    return net
+    return Net()
 
 # DEFINE OPTIMIZER
 def optimizer(net):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
     return [criterion, optimizer]
-
 
 # Computes error on test set
 def computeError(testloader, net):
@@ -82,7 +103,7 @@ def computeError(testloader, net):
     return 100.0 * correct / total
 
 # adds to the running loss for a particular iteration of SGD
-def single_iter(data, criterion, opt):
+def single_iter(data, criterion, opt, net):
     # get the inputs; data is a list of [inputs, labels]
     inputs, labels = data
 
@@ -105,14 +126,14 @@ def train_net(trainloader, testloader, net, criterion, opt, num_epochs):
 
     # give error at initialization
     iters.append(0)
-    losses.append(single_iter(list(enumerate(trainloader, 0))[0][1], criterion, opt))
+    losses.append(single_iter(list(enumerate(trainloader, 0))[0][1], criterion, opt, net))
     test_err.append(round(computeError(testloader, net), 2))
 
     for epoch in range(num_epochs):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # print statistics
-            running_loss += single_iter(data, criterion, opt)
+            running_loss += single_iter(data, criterion, opt, net)
             if i % 2000 == 1999:  # print every 2000 mini-batches
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 2000))
@@ -130,7 +151,6 @@ def train_plot(iters, losses):
     plt.xlabel('iterations')
     plt.ylabel('training error')
     plt.plot(iters, losses)
-    plt.show()
 
 # Test error vs. iterations
 def test_plot(iters, test_err):
@@ -138,19 +158,20 @@ def test_plot(iters, test_err):
     plt.xlabel('iterations')
     plt.ylabel('test accuracy')
     plt.plot(iters, test_err)
-    plt.show()
 
 # FULL DL PIPELINE
 # Trains a specified neural network for a canonical benchmark problem.
 if __name__ == "__main__":
     [train, trainloader, test, testloader] = load()
-    net = construct_nn()
+    net = construct_cnn()
     [criterion, opt] = optimizer(net)
 
-    [iters, losses, test_err] = train_net(trainloader, testloader, net, criterion, opt, 1) # change number of epochs
+    [iters, losses, test_err] = train_net(trainloader, testloader, net, criterion, opt, 3) # change number of epochs
 
     print('Accuracy of the network on the 10000 test images: %f' %
           computeError(testloader, net))
 
     train_plot(iters, losses)
+    plt.show()
     test_plot(iters, test_err)
+    plt.show()
