@@ -90,8 +90,11 @@ def test_pcs(up_bd):
     idx = []
     acc = []
     for i in range(1, up_bd):
-        idx.append[i]
+        idx.append(i)
         acc.append(svd_model(i))
 
     plt.plot(idx, acc)
     plt.show()
+
+if __name__ == "__main__":
+    test_pcs(50)
